@@ -964,6 +964,23 @@ endfunction
 " ------------------------------------------------------------------
 " Snippets (UltiSnips)
 " ------------------------------------------------------------------
+function! s:get_all_snippets() abort
+  call UltiSnips#SnippetsInCurrentScope(1)
+  let list = []
+  for [key, info] in items(g:current_ulti_dict_info)
+    let parts = split(info.location, ':')
+    let type = substitute(split(parts[0], '/')[-1], '.snippets', '', '')
+    call add(list, [
+      \key,
+      \parts[0],
+      \parts[1],
+      \info.description,
+      \type,
+      \])
+  endfor
+  return list
+endfunction
+
 function! s:inject_snippet(line)
   let snip = split(a:line, "\t")[0]
   execute 'normal! a'.s:strip(snip)."\<c-r>=UltiSnips#ExpandSnippet()\<cr>"
@@ -973,12 +990,12 @@ function! fzf#vim#snippets(...)
   if !exists(':UltiSnipsEdit')
     return s:warn('UltiSnips not found')
   endif
-  let list = UltiSnips#SnippetsInCurrentScope()
+  let list = s:get_all_snippets()
   if empty(list)
     return s:warn('No snippets available here')
   endif
-  let aligned = sort(s:align_lists(items(list)))
-  let colored = map(aligned, 's:yellow(v:val[0])."\t".v:val[1]')
+  let aligned = sort(s:align_lists(list))
+  let colored = map(aligned, 's:yellow(v:val[0])."\t".s:blue(v:val[4])."\t".v:val[3]')
   return s:fzf('snippets', {
   \ 'source':  colored,
   \ 'options': '--ansi --tiebreak=index +m -n 1 -d "\t"',
